@@ -1,0 +1,3 @@
+#filename=evil.exe|family=evil|check=(host,network)|indicator=udp
+filename=broken.exe|family=Gh0st|check=network|indicator=udp
+filename=putty.exe|family=Benign|check=host|indicator=reg
