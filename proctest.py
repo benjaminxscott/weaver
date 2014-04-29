@@ -4,7 +4,6 @@ import sys
 import os
 import time
 import argparse
-import hashlib
 
 # XXX turn into functions
 
@@ -24,6 +23,7 @@ status = "/cuckoo/status"
 taskcheck = "/tasks/view/"
 tasklist = "/tasks/list"
 submit = "/tasks/create/file"
+report = "/tasks/report/"
 
 # check that cuckoo is up
 rqst = requests.get(cuckoo_url + status)
@@ -64,23 +64,20 @@ for line in infile:
 			location = os.path.join(root,conf['filename'])
 			print "DBG" + location
 
-# generate md5 of binary
-	binary = open (location, "rb")
-	md5sum = hashlib.md5(binary.read()).hexdigest()
-	binary.close()
-
 # submit to cuckoo 
 	multi_part = {'file': open(location, 'rb')}
 	rqst = requests.post(cuckoo_url + submit, files=multi_part)
 	resp = rqst.json()
 	
 # save off to dict with taskid as index
-	samples [resp['task_id']]= {'md5': md5sum, 'filename': conf['filename'], 'loc':location}
+	samples [resp['task_id']]= {'filename': conf['filename'], 'loc':location, 'status': "pending"}
 
 
 # done with config
 infile.close()
 
+
+# XXX can get md5 from /files/view/id/md5
 
 # hit cuckoo API to see if sample is complete
 
@@ -91,15 +88,18 @@ wait_time = 10
 
 while (cur < timeout ):
 	for taskid in samples:
+		# skip to next if we know this task is done
+		if "completed" in samples[taskid]['status'] :
+			continue
+
 		print "DBG checking " + str(taskid)
 		print samples[taskid]
 
 		rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
-		
 		print rqst.json()
-		print rqst.json()['task']['status']
-		if not rqst.json()['task']['completed_on']: 
-			print "not done yet"
+
+		# pending, completed, running, reported
+		samples[taskid]['status'] = rqst.json()['task']['status']
 
 	# spin for a bit
 	time.sleep(wait_time)
@@ -108,3 +108,6 @@ while (cur < timeout ):
 	
 # TODO search JSON for given indicator type (host, network) and given indicator (reg, http, tcp, udp, etc)
 
+# rqst = requests.get(cuckoo_url + report + str(taskid))
+# parse out json for network / host as needed
+# 404 if not there
