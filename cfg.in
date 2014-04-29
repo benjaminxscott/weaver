@@ -1,3 +1,2 @@
-#filename=evil.exe|family=evil|check=(host,network)|indicator=udp
-filename=broken.exe|family=Gh0st|check=network|indicator=udp
-filename=putty.exe|family=Benign|check=host|indicator=reg
+#filename=evil.exe|family=evil|check=(registry, process, file ,network, mutex)|indicator="value"
+filename=putty.exe|family=Benign|check=registry|indicator="FTP"

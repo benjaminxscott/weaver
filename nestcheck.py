@@ -52,26 +52,23 @@ for line in infile:
 	line = line.rstrip()
 
 	conf = dict (thing.split("=") for thing in line.split("|"))
-	#print "DBG: " + str(conf)
 
-# TODO save family, check / indicator
-
-# XXX if duplicate, don't process and emit warning
 
 # walk dirs to find files as named in config under ./
+# XXX if duplicate, don't process and emit warning
 	for root,d,f in os.walk("."):
 		if conf['filename'] in f:
 			location = os.path.join(root,conf['filename'])
-			print "DBG" + location
 
 # submit to cuckoo 
 	multi_part = {'file': open(location, 'rb')}
 	rqst = requests.post(cuckoo_url + submit, files=multi_part)
 	resp = rqst.json()
 	
-# save off to dict with taskid as index
-	samples [resp['task_id']]= {'filename': conf['filename'], 'loc':location, 'status': "pending"}
-
+# store results using cuckoo taskid as index
+	samples [resp['task_id']] = conf.copy()
+	samples [resp['task_id']]['loc'] = location
+	samples [resp['task_id']]['status'] = "pending"
 
 # done with config
 infile.close()
@@ -79,35 +76,50 @@ infile.close()
 
 # XXX can get md5 from /files/view/id/md5
 
-# hit cuckoo API to see if sample is complete
-
-# XXX may need to be higher timeout
-timeout = 60
+# XXX refactor to scale based on sample #
+timeout = 30
 cur = 0
-wait_time = 10
+wait_time = 30
 
+# Check if processing has completed for samples
 while (cur < timeout ):
+	# wait for samples to process
+	time.sleep(wait_time)
+	cur = cur + wait_time
+
 	for taskid in samples:
-		# skip to next if we know this task is done
-		if "completed" in samples[taskid]['status'] :
-			continue
 
 		print "DBG checking " + str(taskid)
 		print samples[taskid]
 
 		rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
-		print rqst.json()
+#		print rqst.json()
 
-		# pending, completed, running, reported
+		# pending, completed, running
 		samples[taskid]['status'] = rqst.json()['task']['status']
+		print "DBG" + " Task "  + str(taskid) + " is " + samples[taskid]['status'] 
 
-	# spin for a bit
-	time.sleep(wait_time)
-	cur = cur + wait_time
-	print cur
 	
-# TODO search JSON for given indicator type (host, network) and given indicator (reg, http, tcp, udp, etc)
+# verify cuckoo output
+for taskid in samples:
 
-# rqst = requests.get(cuckoo_url + report + str(taskid))
-# parse out json for network / host as needed
-# 404 if not there
+	# check that sample ran and generated report
+	rqst = requests.get(cuckoo_url + report + str(taskid))
+	if (rqst.status_code != 200):
+		samples[taskid]['outcome'] = "sandbox FAILED"
+	else:
+		report = rqst.json()
+
+		# check JSON for given indicator type for and given indicator
+'''
+	# TODO location in json for mutex, registry, process, file, network
+		print report
+		if indicator in report[check]
+			samples[taskid]['outcome'] = "report PASSED"
+		else:
+			samples[taskid]['outcome'] = "report FAILED"
+'''
+
+# TODO pretty print summary
+for taskid in samples:
+	print samples[taskid]
