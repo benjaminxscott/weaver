@@ -2,9 +2,11 @@
 import requests
 import sys
 import os
+import time
 import argparse
 import hashlib
 
+# XXX turn into functions
 
 parser = argparse.ArgumentParser ( description = "Test harness for cuckoo")
 parser.add_argument("--config", help="configuration file for this test")
@@ -19,6 +21,8 @@ else:
 
 # cuckoo API endpoints
 status = "/cuckoo/status"
+taskcheck = "/tasks/view/"
+tasklist = "/tasks/list"
 submit = "/tasks/create/file"
 
 # check that cuckoo is up
@@ -36,7 +40,7 @@ else:
 
 infile = open(config_file)
 
-print "DBG: " + str(infile)
+samples = {}
 
 # parse config 
 for line in infile:
@@ -50,6 +54,8 @@ for line in infile:
 	conf = dict (thing.split("=") for thing in line.split("|"))
 	#print "DBG: " + str(conf)
 
+# TODO save family, check / indicator
+
 # XXX if duplicate, don't process and emit warning
 
 # walk dirs to find files as named in config under ./
@@ -62,20 +68,43 @@ for line in infile:
 	binary = open (location, "rb")
 	md5sum = hashlib.md5(binary.read()).hexdigest()
 	binary.close()
-	print "DBG" + md5sum
 
 # submit to cuckoo 
 	multi_part = {'file': open(location, 'rb')}
 	rqst = requests.post(cuckoo_url + submit, files=multi_part)
-	print "DBG" + rqst.json()['task_id']
+	resp = rqst.json()
 	
-# TODO emit log w/ processing ID, MD5, filename, malware fam
+# save off to dict with taskid as index
+	samples [resp['task_id']]= {'md5': md5sum, 'filename': conf['filename'], 'loc':location}
 
-# TODO wait for sample to be complete, hit cuckoo API
-	rqst = requests.get(cuckoo_url + status)
-	print rqst.text
+
+# done with config
+infile.close()
+
+
+# hit cuckoo API to see if sample is complete
+
+# XXX may need to be higher timeout
+timeout = 60
+cur = 0
+wait_time = 10
+
+while (cur < timeout ):
+	for taskid in samples:
+		print "DBG checking " + str(taskid)
+		print samples[taskid]
+
+		rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
+		
+		print rqst.json()
+		print rqst.json()['task']['status']
+		if not rqst.json()['task']['completed_on']: 
+			print "not done yet"
+
+	# spin for a bit
+	time.sleep(wait_time)
+	cur = cur + wait_time
+	print cur
 	
-
 # TODO search JSON for given indicator type (host, network) and given indicator (reg, http, tcp, udp, etc)
 
-infile.close()
