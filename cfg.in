@@ -1,2 +1,11 @@
-#filename=evil.exe|family=evil|check=(registry, process, file ,network, mutex)|indicator="value"
-filename=putty.exe|family=Benign|check=registry|indicator="FTP"
+
+#section name = filename
+# family = string
+# behavior = {registry, process, file ,network, mutex}
+# indicator = static string to check for in behavior field
+
+[putty.exe]
+
+Family: Benign
+Behavior: registry
+Indicator: "FTP"
