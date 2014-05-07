@@ -8,7 +8,7 @@ import argparse
 
 parser = argparse.ArgumentParser ( description = "Test harness for cuckoo. Takes a config file and emits the same filename appended with '.out' with add'l fields for results")
 parser.add_argument("--config", help="configuration file for this test", default="sample.cfg")
-parser.add_argument("--cuckoo", help="URL where cuckoo API lives (with port", default = "http://localhost:8090")
+parser.add_argument("--cuckoo", help="URL where cuckoo API lives (with port number)", default = "http://localhost:8090")
 args = parser.parse_args()
 
 
@@ -21,13 +21,12 @@ report = "/tasks/report/"
 
 # check that cuckoo is up
 cuckoo_url = args.cuckoo
-'''
+
 rqst = requests.get(cuckoo_url + status)
 if (rqst.status_code != 200):
 	print "ERR: cuckoo is down"
-	print "fix it and re-run"
 	sys.exit(1)
-'''
+
 
 # load config
 config_file = args.config
