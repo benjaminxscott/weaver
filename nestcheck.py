@@ -7,17 +7,12 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser ( description = "Test harness for cuckoo. Takes a config file and emits the same filename appended with '.out' with add'l fields for results")
-parser.add_argument("--config", help="configuration file for this test")
-parser.add_argument("--cuckoo", help="URL where cuckoo API lives (with port")
+parser.add_argument("--config", help="configuration file for this test", default="sample.cfg")
+parser.add_argument("--cuckoo", help="URL where cuckoo API lives (with port", default = "http://localhost:8090")
 args = parser.parse_args()
 
-if (args.cuckoo == None):
-	cuckoo_url = "http://localhost:8090"
-else:
-	config_file = args.cuckoo
 
-
-# cuckoo API endpoints
+# REF cuckoo API endpoints
 status = "/cuckoo/status"
 taskcheck = "/tasks/view/"
 tasklist = "/tasks/list"
@@ -25,6 +20,7 @@ submit = "/tasks/create/file"
 report = "/tasks/report/"
 
 # check that cuckoo is up
+cuckoo_url = args.cuckoo
 '''
 rqst = requests.get(cuckoo_url + status)
 if (rqst.status_code != 200):
@@ -34,14 +30,10 @@ if (rqst.status_code != 200):
 '''
 
 # load config
-if (args.config == None):
-	config_file = "./cfg.in"
-else:
-	config_file = args.config
+config_file = args.config
 
 config = ConfigParser.RawConfigParser()
 config.read(config_file)
-
 
 # find files listed in config 
 samples = []
@@ -49,7 +41,7 @@ for sample_name in config.sections():
 	print "DBG" + str(config.options(sample_name))
 	for root,d,filename in os.walk("."):
 		if sample_name in filename:
-			loc = os.path.join(root, sample_name))
+			loc = os.path.join(root, sample_name)
 	# submit sample to cuckoo 
 	multi_part = {'file': open(loc, 'rb')}
 	rqst = requests.post(cuckoo_url + submit, files=multi_part)
@@ -69,7 +61,7 @@ while (cur < timeout ):
 
 	for sample_name in config.sections():
 		time.sleep(wait_time)
-		taskid = config.get(sample_name, 'Task') )
+		taskid = config.get(sample_name, 'Task') 
 		rqst = requests.get(cuckoo_url + taskcheck + taskid)
 #DBG		print rqst.json()
 
