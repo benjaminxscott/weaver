@@ -2,8 +2,8 @@
 
   "behavior": {
    "summary":{
-       "keys":[],
-       "mutexes":[]
+       "keys":["sandwiches", "GHOSTS", "Jim"],
+       "mutexes":["several things"]
     }
    }   ,
 

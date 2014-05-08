@@ -2,6 +2,7 @@
 import requests
 import sys
 import os
+import json
 import ConfigParser
 import time
 import argparse
@@ -24,8 +25,8 @@ cuckoo_url = args.cuckoo
 
 rqst = requests.get(cuckoo_url + status)
 if (rqst.status_code != 200):
-	print "ERR: cuckoo is down"
-	sys.exit(1)
+    print "ERR: cuckoo is down"
+    sys.exit(1)
 
 
 # load config
@@ -37,58 +38,59 @@ config.read(config_file)
 # find files listed in config 
 samples = []
 for sample_name in config.sections():
-	print "DBG" + str(config.options(sample_name))
-	for root,d,filename in os.walk("."):
-		if sample_name in filename:
-			loc = os.path.join(root, sample_name)
-	# submit sample to cuckoo 
-	multi_part = {'file': open(loc, 'rb')}
-	rqst = requests.post(cuckoo_url + submit, files=multi_part)
-	resp = rqst.json()
+    for root,d,filename in os.walk("."):
+        if sample_name in filename:
+            loc = os.path.join(root, sample_name)
+    # submit sample to cuckoo 
+    multi_part = {'file': open(loc, 'rb')}
+    rqst = requests.post(cuckoo_url + submit, files=multi_part)
+    resp = rqst.json()
 
-	# save off 
-	config.set(sample_name, 'Location', loc)
-	config.set(sample_name, 'Task', int(resp['task_id']))
-	config.set(sample_name, 'Status', "pending")
-	
+    # save off 
+    config.set(sample_name, 'Location', loc)
+    config.set(sample_name, 'Task', int(resp['task_id']))
+    config.set(sample_name, 'Status', "pending")
+    
 
 
 wait_time = 60
 
 # Check each sample
-while (cur < timeout ):
+for sample_name in config.sections():
+    result =  "report FAILED"
 
-	for sample_name in config.sections():
-		time.sleep(wait_time)
-		taskid = config.get(sample_name, 'Task') 
-		rqst = requests.get(cuckoo_url + taskcheck + taskid)
-#DBG		print rqst.json()
+    time.sleep(wait_time)
+    taskid = config.get(sample_name, 'Task') 
+    rqst = requests.get(cuckoo_url + taskcheck + taskid)
+#DBG        print rqst.json()
 
-		# update status
-		config.set(sample_name, 'Status', rqst.json()['task']['status']) 
-	
-		# check sample report
-		rqst = requests.get(cuckoo_url + report + taskid)
-		if (rqst.status_code != 200):
-			# didn't even process
-			config.set(sample_name, "Outcome", "sandbox FAILED")
-		else:
-			# look for indicator in report
-			report = rqst.json()
+    # update status
+    config.set(sample_name, 'Status', rqst.json()['task']['status']) 
 
-'''
-	# TODO location in json for mutex, registry, process, file, network
-		print report
-		
-	# i.e. report[registry] is a list of modified keys
-		if config.get(sample_name, 'Indicator') in report[config.get(sample_name, 'Behavior')
-			result =  "report PASSED"
-		else:
-			result =  "report FAILED"
+    # check report exists
+    rqst = requests.get(cuckoo_url + report + taskid)
+    if (rqst.status_code != 200):
+        config.set(sample_name, "Outcome", "sandbox FAILED")
+        break
+    else:
+        report = rqst.json()
 
-		config.set(sample_name, "Outcome", result)
-'''
+    category = config.get(sample_name, 'Behavior')
+    ind = config.get(sample_name, 'Indicator')
+
+    # check for host-based indicators
+
+    # i.e. report[summary][mutexes] contains "evilmutex"
+    for item in report['behavior']['summary'][category]:
+        if ind in item:
+            result =  "report PASSED"
+
+    # TODO check for network-based indicators
+    # better way of checking each json value  i.e. ['network'][category]:
+
+    config.set(sample_name, "Outcome", result)
 
 # write all samples to output file
 with open(config_file + ".out", 'wb') as out:
     config.write(out)
+
