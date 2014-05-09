@@ -52,7 +52,6 @@ for sample_name in config.sections():
     config.set(sample_name, 'Status', "pending")
     
 
-
 wait_time = 60
 
 # Check each sample
@@ -80,18 +79,30 @@ for sample_name in config.sections():
 
     # check for host-based indicators
 
-    # i.e. report[summary][mutexes] contains "evilmutex"
-    for item in report['behavior']['summary'][category]:
-        if ind in item:
-            result =  "report PASSED"
-
     # TODO check for network-based indicators
-    # better way of checking each json value  i.e. ['network'][category]:
     # can just check for existance of anything under the 'udp', etc lists
+    if "network" in category:
+        try:
+            # i.e. if indicator is "http", report[network] has an nonempty list named 'http'
+            if ind in report['network'][category]:
+                    result =  "report PASSED"
+        except KeyError:
+            print "ERR: " + category + " was not a valid indicator for " + sample_name
+        
+    else:
+    # check for host indicator
+        try:
+            # i.e. report[summary][mutexes] contains "evilmutex"
+            for item in report['behavior']['summary'][category]:
+                if ind in item:
+                    result =  "report PASSED"
+        except KeyError:
+            print "ERR: " + category + " was not a valid indicator for " + sample_name
+
     
     config.set(sample_name, "Outcome", result)
 
-# write all samples to output file
+# done processing, write all samples to output file
 with open(config_file + ".out", 'wb') as out:
     config.write(out)
 
