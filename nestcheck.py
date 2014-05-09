@@ -63,7 +63,7 @@ for sample_name in config.sections():
     time.sleep(timeout)
 
     # check that report exists
-    rqst = requests.get(cuckoo_url + report + taskid)
+    rqst = requests.get(cuckoo_url + report + str(taskid))
     if (rqst.status_code != 200):
         config.set(sample_name, "Outcome", "sandbox FAILED")
         break
