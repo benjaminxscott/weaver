@@ -52,42 +52,38 @@ for sample_name in config.sections():
     config.set(sample_name, 'Status', "pending")
     
 
-wait_time = 60
+timeout = 60
 
 # Check each sample
 for sample_name in config.sections():
-    result =  "report FAILED"
-
-    time.sleep(wait_time)
     taskid = config.get(sample_name, 'Task') 
-    rqst = requests.get(cuckoo_url + taskcheck + taskid)
-#DBG        print rqst.json()
 
-    # update status
-    config.set(sample_name, 'Status', rqst.json()['task']['status']) 
+    print "LOG submitted "+  sample_name
+    print "LOG waiting "+  timeout + " seconds"
+    time.sleep(timeout)
 
-    # check report exists
+    # check that report exists
     rqst = requests.get(cuckoo_url + report + taskid)
     if (rqst.status_code != 200):
         config.set(sample_name, "Outcome", "sandbox FAILED")
         break
     else:
+        # update status
+        config.set(sample_name, 'Status', rqst.json()['task']['status']) 
         report = rqst.json()
 
     category = config.get(sample_name, 'Behavior')
     ind = config.get(sample_name, 'Indicator')
 
-    # check for host-based indicators
-
-    # TODO check for network-based indicators
-    # can just check for existance of anything under the 'udp', etc lists
+    # check for network-based indicators
+    # just check for existance of list under the 'udp', etc 
     if "network" in category:
         try:
             # i.e. if indicator is "http", report[network] has an nonempty list named 'http'
             if ind in report['network'][category]:
                     result =  "report PASSED"
         except KeyError:
-            print "ERR: " + category + " was not a valid indicator for " + sample_name
+            print "ERR invalid config of " + category 
         
     else:
     # check for host indicator
@@ -97,8 +93,7 @@ for sample_name in config.sections():
                 if ind in item:
                     result =  "report PASSED"
         except KeyError:
-            print "ERR: " + category + " was not a valid indicator for " + sample_name
-
+            print "ERR invalid config of " + category 
     
     config.set(sample_name, "Outcome", result)
 
