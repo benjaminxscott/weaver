@@ -87,7 +87,8 @@ for sample_name in config.sections():
 
     # TODO check for network-based indicators
     # better way of checking each json value  i.e. ['network'][category]:
-
+    # can just check for existance of anything under the 'udp', etc lists
+    
     config.set(sample_name, "Outcome", result)
 
 # write all samples to output file
