@@ -52,7 +52,7 @@ for sample_name in config.sections():
     config.set(sample_name, 'Status', "pending")
     
 
-timeout = 60
+timeout = 180
 
 # Check each sample
 for sample_name in config.sections():
