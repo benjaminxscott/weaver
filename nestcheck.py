@@ -66,37 +66,37 @@ for sample_name in config.sections():
     rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
     config.set(sample_name, 'Status', rqst.json()['task']['status']) 
 
-    # check  report exists
+    # check that report exists
     rqst = requests.get(cuckoo_url + report + str(taskid))
-    report = rqst.json()
-    
     if (rqst.status_code != 200):
         config.set(sample_name, "Outcome", "sandbox FAILED")
-        break
-    else:
-        category = config.get(sample_name, 'Behavior')
-        ind = config.get(sample_name, 'Indicator')
+        continue # skip to next sample
     
-        # check for network-based indicators
-        if "network" in category:
-            try:
-                # i.e. if indicator is "http", report[network] has an nonempty list named 'http'
-                if ind in report['network']:
-                        result =  "report PASSED"
-            except KeyError:
-                print "ERR invalid config of " + category 
-            
-        else:
-        # check for host indicator
-            try:
-                # i.e. report[summary][mutexes] contains "evilmutex"
-                for item in report['behavior']['summary'][category]:
-                    if ind in item:
-                        result =  "report PASSED"
-            except KeyError:
-                print "ERR invalid config of " + category 
+    report = rqst.json()
+    
+    category = config.get(sample_name, 'Behavior')
+    ind = config.get(sample_name, 'Indicator')
+
+    # check for network-based indicators
+    if "network" in category:
+        try:
+            # i.e. if indicator is "http", report[network] has an nonempty list named 'http'
+            if ind in report['network']:
+                    result =  "report PASSED"
+        except KeyError:
+            print "ERR invalid config of " + category 
         
-        config.set(sample_name, "Outcome", result)
+    else:
+    # check for host indicator
+        try:
+            # i.e. report[summary][mutexes] contains "evilmutex"
+            for item in report['behavior']['summary'][category]:
+                if ind in item:
+                    result =  "report PASSED"
+        except KeyError:
+            print "ERR invalid config of " + category 
+    
+    config.set(sample_name, "Outcome", result)
 
 # done processing, write output file
 with open(config_file + ".out", 'wb') as out:
