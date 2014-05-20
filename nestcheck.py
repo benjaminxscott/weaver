@@ -37,6 +37,7 @@ config.read(config_file)
 
 # find files listed in config 
 samples = []
+loc = "none"
 for sample_name in config.sections():
     for root,d,filename in os.walk("."):
         if sample_name in filename:
@@ -56,6 +57,9 @@ timeout = 180
 
 # Check each sample
 for sample_name in config.sections():
+    # TODO consolidate to one for loop() and skip if no file given if "none" in config.get(sample_name, 'Location'):
+        # continue # no sample file was given
+    
     taskid = config.get(sample_name, 'Task') 
 
     print "LOG submitted "+  sample_name
