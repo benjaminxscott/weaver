@@ -58,8 +58,7 @@ timeout = 180
 # Check each sample
 for sample_name in config.sections():
     # TODO consolidate to one for loop() and skip if no file given if "none" in config.get(sample_name, 'Location'):
-        # continue # no sample file was given
-    
+    # submit one, wait until running, then check
     taskid = config.get(sample_name, 'Task') 
 
     print "LOG submitted "+  sample_name
