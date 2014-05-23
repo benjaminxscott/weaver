@@ -86,8 +86,8 @@ for sample_name in config.sections():
     # check for network-based indicators
     if "network" in category:
         try:
-            # i.e. if indicator is "http", report[network] has an nonempty list named 'http'
-            if ind in report['network']:
+            # i.e. if indicator is "http", we have a non-empty list in report[network][http]
+            if report['network'][ind]:
                     result =  "report PASSED"
         except KeyError:
             print "ERR invalid config of " + category 
