@@ -64,7 +64,7 @@ for sample_name in config.sections():
 
     # wait until done processing
 
-    print sample_name + "submitted"
+    print sample_name + " was submitted"
     time.sleep(timeout)
 
     # update status of sample
@@ -72,8 +72,8 @@ for sample_name in config.sections():
     status = rqst.json()['task']['status']
     config.set(sample_name, 'Status', status)
 
-    if (status != "completed"):
-        config.set(sample_name, "Outcome", "cuckoo failed to process sample")
+    if (status != "reported"):
+        config.set(sample_name, "Outcome", "cuckoo failed to create report")
         continue # skip to next sample
 
 
