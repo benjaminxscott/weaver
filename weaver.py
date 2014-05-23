@@ -35,48 +35,51 @@ config_file = args.config
 config = ConfigParser.RawConfigParser()
 config.read(config_file)
 
-# find files listed in config 
-samples = []
-loc = "none"
+# Submit each sample and wait for results
+timeout = 240
+
 for sample_name in config.sections():
+
+    # try to find sample under current dir
     for root,d,filename in os.walk("."):
         if sample_name in filename:
-            loc = os.path.join(root, sample_name)
+            try:
+                loc = os.path.join(root, sample_name)
+            except NameError:
+                loc = "none"
+                
+        config.set(sample_name, "Outcome", "sample did not exist")
+        continue # skip to next sample
+
     # submit sample to cuckoo 
     multi_part = {'file': open(loc, 'rb')}
     rqst = requests.post(cuckoo_url + submit, files=multi_part)
     resp = rqst.json()
 
-    # save off 
+    taskid = int(resp['task_id'])
+
+    # save off submission info
     config.set(sample_name, 'Location', loc)
-    config.set(sample_name, 'Task', int(resp['task_id']))
-    config.set(sample_name, 'Status', "pending")
-    
+    config.set(sample_name, 'Task', taskid)
 
-timeout = 180
+    # wait until done processing
 
-# Check each sample
-for sample_name in config.sections():
-    # TODO consolidate to one for loop() and skip if no file given if "none" in config.get(sample_name, 'Location'):
-    # submit one, wait until running, then check
-    taskid = config.get(sample_name, 'Task') 
-
-    print "LOG submitted "+  sample_name
-    print "LOG waiting "+  timeout + " seconds"
+    print sample_name + "submitted - waiting "+  timeout + " seconds"
     time.sleep(timeout)
 
     # update status of sample
     rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
-    config.set(sample_name, 'Status', rqst.json()['task']['status']) 
+    status = rqst.json()['task']['status']
+    config.set(sample_name, 'Status', status)
 
-    # check that report exists
-    rqst = requests.get(cuckoo_url + report + str(taskid))
-    if (rqst.status_code != 200):
-        config.set(sample_name, "Outcome", "sandbox FAILED")
+    if (status != "completed"):
+        config.set(sample_name, "Outcome", "cuckoo failed to process sample")
         continue # skip to next sample
-    
+
+
+    # if we've gotten here, the report exists
+    rqst = requests.get(cuckoo_url + report + str(taskid))
     report = rqst.json()
-    
     category = config.get(sample_name, 'Behavior')
     ind = config.get(sample_name, 'Indicator')
 
@@ -92,7 +95,7 @@ for sample_name in config.sections():
     else:
     # check for host indicator
         try:
-            # i.e. report[summary][mutexes] contains "evilmutex"
+            # i.e. report[behavior][summary][mutexes] contains "evilmutex"
             for item in report['behavior']['summary'][category]:
                 if ind in item:
                     result =  "report PASSED"
