@@ -64,7 +64,7 @@ for sample_name in config.sections():
 
     # wait until done processing
 
-    print sample_name + "submitted - waiting "+  timeout + " seconds"
+    print sample_name + "submitted"
     time.sleep(timeout)
 
     # update status of sample
