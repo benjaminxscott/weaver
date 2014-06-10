@@ -84,6 +84,10 @@ for sample_name in config.sections():
     ind = config.get(sample_name, 'Indicator')
 
     # check for network-based indicators
+    
+    # by default if we don't find the indicator
+    result =  "report FAILED"
+    
     if "network" in category:
         try:
             # i.e. if indicator is "http", we have a non-empty list in report[network][http]
