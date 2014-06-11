@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser ( formatter_class=argparse.ArgumentDefaultsHelp
             + "Takes a configuration file listing the sample name and success criteria")
 parser.add_argument("--config", help="configuration file", default="sample.cfg") 
 parser.add_argument("--cuckoo", help="URL and port for cuckoo server API", default="http://localhost:8090") 
+parser.add_argument("-v","--verbose", help="have verbose output", action='store_true') 
+
 
 # REF cuckoo API endpoints
 status = "/cuckoo/status"
@@ -68,7 +70,9 @@ for sample_name in config.sections():
 
     # wait until done processing
 
-    print sample_name + " was submitted"
+    if args.verbose:
+        print sample_name + " was submitted with task ID " + str(taskid)
+    
     time.sleep(timeout)
 
     # update status of sample
@@ -87,11 +91,14 @@ for sample_name in config.sections():
     category = config.get(sample_name, 'Behavior')
     ind = config.get(sample_name, 'Indicator')
 
-    # check for network-based indicators
+    # check for  indicators
     
-    # by default if we don't find the indicator
     result =  "report FAILED"
     
+    if args.verbose:
+        print "checking for "+ ind + " under " + category
+        
+    # find network indicators
     if "network" in category:
         try:
             # i.e. if indicator is "http", we have a non-empty list in report[network][http]
@@ -101,7 +108,8 @@ for sample_name in config.sections():
             print "ERR invalid config of " + category 
         
     else:
-    # check for host indicator
+        
+    # find host indicators
         try:
             # i.e. report[behavior][summary][mutexes] contains "evilmutex"
             for item in report['behavior']['summary'][category]:
@@ -113,6 +121,12 @@ for sample_name in config.sections():
     config.set(sample_name, "Outcome", result)
 
 # done processing, write output file
-with open(config_file + ".out", 'wb') as out:
+
+outfile = config_file + ".result"
+
+if args.verbose:
+    print "writing output file "+ outfile
+
+with open(outfile, 'wb') as out:
     config.write(out)
 
