@@ -33,7 +33,11 @@ if (rqst.status_code != 200):
 config_file = args.config
 
 config = ConfigParser.RawConfigParser()
-config.read(config_file)
+try:
+    config.read(config_file)
+except:
+    print "ERR: Configuration file did not exist: " + config_file
+    exit(1)
 
 # Submit each sample and wait for results
 timeout = 240
