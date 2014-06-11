@@ -7,11 +7,11 @@ import ConfigParser
 import time
 import argparse
 
-parser = argparse.ArgumentParser ( description = "Test harness for cuckoo. Takes a config file and emits the same filename appended with '.out' with add'l fields for results")
-parser.add_argument("--config", help="configuration file for this test", default="sample.cfg")
-parser.add_argument("--cuckoo", help="URL where cuckoo API lives (with port number)", default = "http://localhost:8090")
-args = parser.parse_args()
-
+parser = argparse.ArgumentParser ( formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    description = "Automatic submission suite for cuckoobox, meant for testing / verification of sandbox images. \n"
+            + "Takes a configuration file listing the sample name and success criteria")
+parser.add_argument("--config", help="configuration file", default="sample.cfg") 
+parser.add_argument("--cuckoo", help="URL and port for cuckoo server API", default="http://localhost:8090") 
 
 # REF cuckoo API endpoints
 status = "/cuckoo/status"
