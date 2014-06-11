@@ -42,7 +42,6 @@ except:
     exit(1)
 
 # Submit each sample and wait for results
-timeout = 240
 
 for sample_name in config.sections():
 
@@ -68,60 +67,73 @@ for sample_name in config.sections():
     config.set(sample_name, 'Location', loc)
     config.set(sample_name, 'Task', taskid)
 
-    # wait until done processing
-
     if args.verbose:
         print sample_name + " was submitted with task ID " + str(taskid)
+
+
+    # spin until done processing sample
+    timeout = 600
+    spent = 0
+    while status is not "reported" and spent < timeout
+        wait = 60
+        if args.verbose:
+            print "waiting " + wait + " seconds for sample to process"
+            
+        time.sleep(wait)
+        spent = spent + wait
+        
+        # check status of sample
+        rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
+        status = rqst.json()['task']['status']
+        config.set(sample_name, 'Status', status)
+        if args.verbose:
+                print "at time " + spent + " status of " + sample_name + " is " + status
     
-    time.sleep(timeout)
-
-    # update status of sample
-    rqst = requests.get(cuckoo_url + taskcheck + str(taskid))
-    status = rqst.json()['task']['status']
-    config.set(sample_name, 'Status', status)
-
-    if (status != "reported"):
-        config.set(sample_name, "Outcome", "cuckoo failed to create report")
+    # we're done waiting, let's try to check the report        
+    if (status is not "reported"):
+        config.set(sample_name, "Outcome", "cuckoo did not generate a report")    
         continue # skip to next sample
 
-
-    # if we've gotten here, the report exists
-    rqst = requests.get(cuckoo_url + report + str(taskid))
-    report = rqst.json()
-    category = config.get(sample_name, 'Behavior')
-    ind = config.get(sample_name, 'Indicator')
-
-    # check for  indicators
-    
-    result =  "report FAILED"
-    
-    if args.verbose:
-        print "checking for "+ ind + " under " + category
-        
-    # find network indicators
-    if "network" in category:
-        try:
-            # i.e. if indicator is "http", we have a non-empty list in report[network][http]
-            if report['network'][ind]:
-                    result =  "report PASSED"
-        except KeyError:
-            print "ERR invalid config of " + category 
-        
     else:
+        # get report from cuckoo
         
-    # find host indicators
-        try:
-            # i.e. report[behavior][summary][mutexes] contains "evilmutex"
-            for item in report['behavior']['summary'][category]:
-                if ind in item:
-                    result =  "report PASSED"
-        except KeyError:
-            print "ERR invalid config of " + category 
+        rqst = requests.get(cuckoo_url + report + str(taskid))
+        report = rqst.json()
+        category = config.get(sample_name, 'Behavior')
+        ind = config.get(sample_name, 'Indicator')
     
-    config.set(sample_name, "Outcome", result)
+        # check for  indicators
 
-# done processing, write output file
+        if args.verbose:
+            print "checking for "+ ind + " under " + category
 
+        result =  "report FAILED"                
+        # find network indicators
+        if "network" in category:
+            try:
+                # i.e. if indicator is "http", we have a non-empty list in report[network][http]
+                if report['network'][ind]:
+                        result =  "report PASSED"
+            except KeyError:
+                print "ERR invalid config of " + category 
+            
+        else:
+            
+        # find host indicators
+            try:
+                # i.e. report[behavior][summary][mutexes] contains "evilmutex"
+                for item in report['behavior']['summary'][category]:
+                    if ind in item:
+                        result =  "report PASSED"
+            except KeyError:
+                print "ERR invalid config of " + category 
+        
+        if args.verbose:
+            print sample_name + " had an outcome of " + outcome
+            
+        config.set(sample_name, "Outcome", result)
+
+# done processing,all samples, write output file
 outfile = config_file + ".result"
 
 if args.verbose:
