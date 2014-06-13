@@ -76,7 +76,7 @@ for sample_name in config.sections():
     # spin until done processing sample
     timeout = 600
     spent = 0
-    while status is not "reported" and spent < timeout:
+    while status != "reported" and spent < timeout:
         wait = 60
         if args.verbose:
             print "waiting " + wait + " seconds for sample to process"
