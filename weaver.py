@@ -7,6 +7,14 @@ import ConfigParser
 import time
 import argparse
 
+# REF cuckoo API endpoints
+status = "/cuckoo/status"
+taskcheck = "/tasks/view/"
+tasklist = "/tasks/list"
+submit = "/tasks/create/file"
+report = "/tasks/report/"
+
+# get args
 parser = argparse.ArgumentParser ( formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     description = "Automatic submission suite for cuckoobox, meant for testing / verification of sandbox images. \n"
             + "Takes a configuration file listing the sample name and success criteria")
@@ -14,13 +22,7 @@ parser.add_argument("--config", help="configuration file", default="sample.cfg")
 parser.add_argument("--cuckoo", help="URL and port for cuckoo server API", default="http://localhost:8090") 
 parser.add_argument("-v","--verbose", help="have verbose output", action='store_true') 
 
-
-# REF cuckoo API endpoints
-status = "/cuckoo/status"
-taskcheck = "/tasks/view/"
-tasklist = "/tasks/list"
-submit = "/tasks/create/file"
-report = "/tasks/report/"
+args = parser.parse_args()
 
 # check that cuckoo is up
 cuckoo_url = args.cuckoo
