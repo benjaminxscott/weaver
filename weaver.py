@@ -92,7 +92,7 @@ for sample_name in config.sections():
                 print "at time " + spent + " status of " + sample_name + " is " + status
     
     # we're done waiting, let's try to check the report        
-    if (status is not "reported"):
+    if (status != "reported"):
         config.set(sample_name, "Outcome", "cuckoo did not generate a report")    
         continue # skip to next sample
 
