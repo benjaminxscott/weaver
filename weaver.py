@@ -8,7 +8,7 @@ import time
 import argparse
 
 # REF cuckoo API endpoints
-status = "/cuckoo/status"
+statcheck = "/cuckoo/status"
 taskcheck = "/tasks/view/"
 tasklist = "/tasks/list"
 submit = "/tasks/create/file"
@@ -27,9 +27,11 @@ args = parser.parse_args()
 # check that cuckoo is up
 cuckoo_url = args.cuckoo
 
-rqst = requests.get(cuckoo_url + status)
-if (rqst.status_code != 200):
-    print "ERR: cuckoo is down"
+try:
+    rqst = requests.get(cuckoo_url + statcheck)
+
+except:
+    print "ERR: cuckoo server at " + cuckoo_url + " appears to be unresponsive - exiting"
     sys.exit(1)
 
 
@@ -61,22 +63,25 @@ for sample_name in config.sections():
     # submit sample to cuckoo 
     multi_part = {'file': open(loc, 'rb')}
     rqst = requests.post(cuckoo_url + submit, files=multi_part)
-    resp = rqst.json()
 
-    taskid = int(resp['task_id'])
+    try:
+        resp = rqst.json()
+        taskid = int(resp['task_id'])
+        status = "submitted"
+        if args.verbose:
+            print sample_name + " was submitted with task ID " + str(taskid)
+    except:
+        config.set(sample_name, "Outcome", "error in cuckoo response")
+        continue # skip to next sample
 
     # save off submission info
     config.set(sample_name, 'Location', loc)
     config.set(sample_name, 'Task', taskid)
 
-    if args.verbose:
-        print sample_name + " was submitted with task ID " + str(taskid)
-
-
     # spin until done processing sample
     timeout = 600
     spent = 0
-    while status != "reported" and spent < timeout:
+    while status != "reported" and spent < timeout :
         wait = 60
         if args.verbose:
             print "waiting " + wait + " seconds for sample to process"
@@ -101,16 +106,15 @@ for sample_name in config.sections():
         
         rqst = requests.get(cuckoo_url + report + str(taskid))
         report = rqst.json()
-        category = config.get(sample_name, 'Behavior')
+        category = config.get(sample_name, 'Section')
         ind = config.get(sample_name, 'Indicator')
     
-        # check for  indicators
-
         if args.verbose:
             print "checking for "+ ind + " under " + category
 
         result =  "report FAILED"                
-        # find network indicators
+
+        # - find network indicators
         if "network" in category:
             try:
                 # i.e. if indicator is "http", we have a non-empty list in report[network][http]
@@ -121,7 +125,7 @@ for sample_name in config.sections():
             
         else:
             
-        # find host indicators
+        # - examine host indicators
             try:
                 # i.e. report[behavior][summary][mutexes] contains "evilmutex"
                 for item in report['behavior']['summary'][category]:
