@@ -45,9 +45,17 @@ except:
     print "ERR: Configuration file did not exist: " + config_file
     exit(1)
 
+
 # Submit each sample and wait for results
 
 for sample_name in config.sections():
+
+    # TODO DBG collect indicators from config
+    detections = zip(config.get(sample_name, 'Section').split(','), config.get(sample_name, 'Indicator').split(','))
+
+    for i, (ind, section) in enumerate(detections):
+        if args.verbose:
+            print "checking " + sample_name + " for "+ ind + " under " +section
 
     # try to find sample under current dir
     for root,d,filename in os.walk("."):
@@ -55,10 +63,9 @@ for sample_name in config.sections():
             try:
                 loc = os.path.join(root, sample_name)
             except NameError:
-                loc = "none"
-                
-        config.set(sample_name, "Outcome", "sample did not exist")
-        continue # skip to next sample
+            # TODO possible issue here if can't find file - breaks are bad way to handle
+                config.set(sample_name, "Outcome", "sample did not exist")
+                continue # skip to next sample
 
     # submit sample to cuckoo 
     multi_part = {'file': open(loc, 'rb')}
@@ -103,41 +110,56 @@ for sample_name in config.sections():
 
     else:
         # get report from cuckoo
-        
         rqst = requests.get(cuckoo_url + report + str(taskid))
         report = rqst.json()
-        category = config.get(sample_name, 'Section')
-        ind = config.get(sample_name, 'Indicator')
     
-        if args.verbose:
-            print "checking for "+ ind + " under " + category
+        # collect indicators from config
+        detections = zip(config.get(sample_name, 'Section').split(','), config.get(sample_name, 'Indicator').split(','))
 
-        result =  "report FAILED"                
+        found = False
+        for i, (ind, section) in enumerate(detections):
+            if args.verbose:
+                print "checking " + sample_name + " for "+ ind + " under " +section
 
-        # - find network indicators
-        if "network" in category:
-            try:
-                # i.e. if indicator is "http", we have a non-empty list in report[network][http]
-                if report['network'][ind]:
-                        result =  "report PASSED"
-            except KeyError:
-                print "ERR invalid config of " + category 
+            # - find network indicators
+            if "network" in section:
+                try:
+                    # i.e. if indicator is "http", we have a non-empty list in report[network][http]
+                    if report['network'][ind]:
+                        found=  True
+                    else:
+                        found = False
+                except KeyError:
+                    print "ERR invalid config value " +section 
+                
+            else:
+            # - examine host indicators
+                try:
+                    # i.e. report[behavior][summary][mutexes] contains "evilmutex"
+                    for item in report['behavior']['summary'][category]:
+                        if ind in item:
+                            found=  True
+                            break
+                    found = False
+                except KeyError:
+                    print "ERR invalid config value " +section 
             
-        else:
+            if args.verbose:
+                print "Were indicators for " + sample_name + " in report? " + found
             
-        # - examine host indicators
-            try:
-                # i.e. report[behavior][summary][mutexes] contains "evilmutex"
-                for item in report['behavior']['summary'][category]:
-                    if ind in item:
-                        result =  "report PASSED"
-            except KeyError:
-                print "ERR invalid config of " + category 
-        
-        if args.verbose:
-            print sample_name + " had an outcome of " + outcome
-            
-        config.set(sample_name, "Outcome", result)
+            # short-circuit if one indicator is not found 
+            # allows AND behavior for multiple indicators
+            if found == False:
+                break
+
+        # end for
+                
+        # log result
+        if found: 
+            config.set(sample_name, "Outcome", "SUCCESS")
+        else: 
+            config.set(sample_name, "Outcome", "report did not include indicators")
+
 
 # done processing,all samples, write output file
 outfile = config_file + ".result"
