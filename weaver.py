@@ -137,7 +137,7 @@ for sample_name in config.sections():
             # - examine host indicators
                 try:
                     # i.e. report[behavior][summary][mutexes] contains "evilmutex"
-                    for item in report['behavior']['summary'][category]:
+                    for item in report['behavior']['summary'][section]:
                         if ind in item:
                             found=  True
                             break
