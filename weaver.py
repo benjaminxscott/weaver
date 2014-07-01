@@ -51,7 +51,7 @@ except:
 
 for sample_name in config.sections():
 
-    # TODO DBG collect indicators from config
+    # collect indicators from config
     detections = zip(config.get(sample_name, 'Section').split(','), config.get(sample_name, 'Indicator').split(','))
 
     for i, (ind, section) in enumerate(detections):
