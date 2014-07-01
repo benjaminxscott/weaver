@@ -146,7 +146,7 @@ for sample_name in config.sections():
                     print "ERR invalid config value " +section 
             
             if args.verbose:
-                print "Were indicators for " + sample_name + " in report? " + found
+                print "Were indicators for " + sample_name + " in report? " + str(found)
             
             # short-circuit if one indicator is not found 
             # allows AND behavior for multiple indicators
