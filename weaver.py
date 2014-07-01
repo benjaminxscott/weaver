@@ -102,7 +102,7 @@ for sample_name in config.sections():
         status = rqst.json()['task']['status']
         config.set(sample_name, 'Status', status)
         if args.verbose:
-                print "at time " + spent + " status of " + sample_name + " is " + status
+                print "at time " + str(spent) + " status of " + sample_name + " is " + status
     
     # we're done waiting, let's try to check the report        
     if (status != "reported"):
