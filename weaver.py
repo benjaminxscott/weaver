@@ -40,9 +40,7 @@ config_file = args.config
 
 config = ConfigParser.RawConfigParser()
 
-try:
-    config.read(config_file)
-except:
+if not config.read(config_file) :
     print "ERR: Configuration file did not exist: " + config_file
     exit(1)
 
@@ -52,14 +50,16 @@ except:
 for sample_name in config.sections():
 
     # try to find sample under current dir
+    found = False
     for root,d,filename in os.walk("."):
         if sample_name in filename:
-            try:
-                loc = os.path.join(root, sample_name)
-            except NameError:
-            # TODO possible issue here if can't find file - breaks are bad way to handle
-                config.set(sample_name, "Outcome", "sample did not exist")
-                continue # skip to next sample
+            loc = os.path.join(root, sample_name)
+            found = True
+            break
+        if not found:
+            print "ERR sample " + sample_name + "did not exist"
+            config.set(sample_name, "Outcome", "sample did not exist")
+            continue # skip to next sample
 
     # submit sample to cuckoo 
     multi_part = {'file': open(loc, 'rb')}
