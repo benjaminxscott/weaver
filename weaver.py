@@ -134,7 +134,8 @@ for sample_name in config.sections():
                         if ind in item:
                             found=  True
                             break
-                    found = False
+                        else:
+                            found = False
                 except KeyError:
                     print "ERR invalid config value " +section 
             
