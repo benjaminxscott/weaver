@@ -51,13 +51,6 @@ except:
 
 for sample_name in config.sections():
 
-    # collect indicators from config
-    detections = zip(config.get(sample_name, 'Section').split(','), config.get(sample_name, 'Indicator').split(','))
-
-    for i, (ind, section) in enumerate(detections):
-        if args.verbose:
-            print "checking " + sample_name + " for "+ ind + " under " +section
-
     # try to find sample under current dir
     for root,d,filename in os.walk("."):
         if sample_name in filename:
