@@ -153,7 +153,7 @@ for sample_name in config.sections():
         if found: 
             config.set(sample_name, "Outcome", "SUCCESS")
         else: 
-            config.set(sample_name, "Outcome", "report did not include indicators")
+            config.set(sample_name, "Outcome", "report did not contain all specified indicators")
 
 
 # done processing,all samples, write output file
