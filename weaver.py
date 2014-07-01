@@ -39,6 +39,7 @@ except:
 config_file = args.config
 
 config = ConfigParser.RawConfigParser()
+
 try:
     config.read(config_file)
 except:
@@ -91,7 +92,7 @@ for sample_name in config.sections():
     while status != "reported" and spent < timeout :
         wait = 60
         if args.verbose:
-            print "waiting " + wait + " seconds for sample to process"
+            print "waiting " + str(wait) + " seconds for sample to process"
             
         time.sleep(wait)
         spent = spent + wait
