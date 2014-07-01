@@ -118,7 +118,7 @@ for sample_name in config.sections():
         detections = zip(config.get(sample_name, 'Section').split(','), config.get(sample_name, 'Indicator').split(','))
 
         found = False
-        for i, (ind, section) in enumerate(detections):
+        for i, (section, ind) in enumerate(detections):
             if args.verbose:
                 print "checking " + sample_name + " for "+ ind + " under " +section
 
